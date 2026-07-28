@@ -1,0 +1,16 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Local Vector DB & Caches
+data/chroma_db/
+.cache/
+
+# Environment Variables
+.env
+
+# Raw Documents (keeps repo lightweight)
+data/raw_docs/*
+!.gitignore
