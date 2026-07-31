@@ -14,3 +14,12 @@
 * **Persistence & Upsert Safety:** Using `chromadb.PersistentClient` ensures data persists on disk in `data/chroma_db/`. Switching from `.add()` to `.upsert()` prevents crash errors when re-running scripts with existing IDs.
 * **Distance vs. Similarity:** ChromaDB returns Cosine Distance ($0.0 = \text{identical}$), which requires a `1 - distance` transformation to output intuitive similarity scores where $1.0$ represents an exact match.
 * **Metadata Foundation:** Attaching structured dictionaries to documents unlocks future filtered queries using the `where` parameter without degrading search performance.
+
+## Day 3: Chunking Strategies & Token Size Experiments
+
+**Key Observations:**
+
+* **The Chunk Size Trade-off:** Smaller chunks (200 tokens) yield higher vector similarity (0.639) by isolating direct matches, but sacrifice surrounding narrative context. Larger chunks (1000 tokens) suffer from context dilution, dropping similarity to 0.336 due to extra noise.
+* **Structure-Aware Chunking:** Paragraph-based chunking prevents breaking thoughts mid-sentence, while token-based chunking with overlap (10-20%) acts as a necessary safety net against severed boundary text.
+* **Optimal Selection:** 500-token chunking hit the "sweet spot" for text retrieval, offering a balanced trade-off between semantic precision and sufficient LLM context.
+* **Persistence Management:** Database assets persist safely on disk in `./data/chroma_db/`, requiring proper `client.delete_collection()` calls for clean resets instead of manual file deletion.
