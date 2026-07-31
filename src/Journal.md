@@ -23,3 +23,12 @@
 * **Structure-Aware Chunking:** Paragraph-based chunking prevents breaking thoughts mid-sentence, while token-based chunking with overlap (10-20%) acts as a necessary safety net against severed boundary text.
 * **Optimal Selection:** 500-token chunking hit the "sweet spot" for text retrieval, offering a balanced trade-off between semantic precision and sufficient LLM context.
 * **Persistence Management:** Database assets persist safely on disk in `./data/chroma_db/`, requiring proper `client.delete_collection()` calls for clean resets instead of manual file deletion.
+
+## Day 4: Full RAG Pipeline & Grounded Generation
+
+**Key Observations:**
+
+* **End-to-End Modular Architecture:** Integrated document ingestion (`pypdf` + paragraph chunking), persistent vector retrieval (ChromaDB), prompt augmentation, and Gemini generation into a unified RAG engine.
+* **Grounding Guardrails & Zero Hallucinations:** Enforcing strict prompt rules (`temperature=0.0`, explicit instructions to admit ignorance, and chunk-level citation requirements) prevented the LLM from relying on outside pre-training knowledge.
+* **Retrieval Boundaries:** When asking specific questions (e.g., Chapter 1 themes or paper methodology), returning `top_k=3` chunks meant the model correctly refused to answer if the target content was outside those 3 chunks, proving prompt grounding works as designed.
+* **RAG vs. Fine-Tuning:** RAG remains the optimal pattern for dynamic, verifiable knowledge retrieval with explicit source attribution, whereas fine-tuning is better suited for style and format customization.
