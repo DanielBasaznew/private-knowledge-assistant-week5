@@ -13,6 +13,24 @@ from rag_engine import query_llm
 console = Console()
 COLLECTION_NAME = "private_knowledge_base"
 
+def trim_context_if_needed(retrieved_chunks: list, max_chars: int = 12000) -> list:
+    """
+    Context Window Protection Guardrail:
+    Iterates through ranked chunks and includes them only until max_chars threshold is reached.
+    """
+    trimmed_chunks = []
+    total_chars = 0
+
+    for chunk in retrieved_chunks:
+        # Check both possible key names depending on your vector store schema
+        text = chunk.get("text") or chunk.get("document", "")
+        if total_chars + len(text) > max_chars and trimmed_chunks:
+            console.print(f"[dim yellow]⚠ Context limit reached ({total_chars} chars). Trimming lower-ranked chunks.[/dim yellow]")
+            break
+        trimmed_chunks.append(chunk)
+        total_chars += len(text)
+
+    return trimmed_chunks
 
 class KnowledgeAssistant:
     def __init__(self):
@@ -92,6 +110,7 @@ class KnowledgeAssistant:
                 return
 
             # Build RAG prompt and call Gemini
+            retrieved_chunks = trim_context_if_needed(retrieved_chunks, max_chars=12000)
             augmented_prompt = build_rag_prompt(query, retrieved_chunks)
             answer = query_llm(RAG_SYSTEM_PROMPT, augmented_prompt)
 
@@ -126,6 +145,7 @@ class KnowledgeAssistant:
                 return
 
             # Build unified prompt and generate synthesis
+            combined_chunks = trim_context_if_needed(combined_chunks, max_chars=12000)  
             augmented_prompt = build_rag_prompt(query, combined_chunks)
             answer = query_llm(RAG_SYSTEM_PROMPT, augmented_prompt)
 
