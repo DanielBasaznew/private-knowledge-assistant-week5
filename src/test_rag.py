@@ -16,7 +16,15 @@ if not os.path.exists(pdf_path):
     urllib.request.urlretrieve(url, pdf_path)
     print("[INFO] Downloaded sample_paper.pdf successfully.")
 
-# 3. Ingest documents into ChromaDB
+# 3. CLEAR old collection before re-ingesting with new chunking
+from vector_store import client as chroma_client
+try:
+    chroma_client.delete_collection("rag_knowledge_base")
+    print("[RESET] Deleted old 'rag_knowledge_base' collection to apply new chunking.")
+except Exception:
+    pass  # Collection didn't exist yet, that's fine
+
+# 4. Ingest documents into ChromaDB (fresh)
 print("\n--- INGESTING DOCUMENTS ---")
 ingest_text_file(txt_path, collection_name="rag_knowledge_base")
 ingest_pdf(pdf_path, collection_name="rag_knowledge_base")
@@ -42,6 +50,26 @@ test_queries = [
         "q": "Who are the main characters and what is their conflict?",
         "source_filter": "frankenstein.txt",
         "description": "Book Test: Broad character relationship retrieval"
+    },
+    {
+        "q": "What are the two sub-layers in each layer of the Transformer encoder?",
+        "source_filter": "sample_paper.pdf",
+        "description": "Paper Test: Precision Architecture Fact-Checking"
+    },
+    {
+        "q": "What accuracy did the Transformer achieve on the ImageNet image classification dataset?",
+        "source_filter": "sample_paper.pdf",
+        "description": "Paper Test: Grounding Trap (Should refuse to answer)"
+    },
+    {
+        "q": "What is the name of Robert Walton's sister who receives his letters?",
+        "source_filter": "frankenstein.txt",
+        "description": "Book Test: Specific Entity/Name Extraction"
+    },
+    {
+        "q": "Why does Robert Walton express a strong desire for a friend on his ship?",
+        "source_filter": "frankenstein.txt",
+        "description": "Book Test: Character Sentiment & Motivation"
     }
 ]
 
@@ -61,7 +89,7 @@ for item in test_queries:
     result = ask(
         query=item['q'],
         collection_name="rag_knowledge_base",
-        top_k=3,
+        top_k=6,
         filter_source=item['source_filter']
     )
     

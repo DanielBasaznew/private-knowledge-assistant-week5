@@ -71,10 +71,18 @@ def chunk_by_paragraph(text: str, max_chunk_size: int = 500, overlap: int = 50) 
             current_chunk_paragraphs.append(p_clean)
             current_tokens += p_tokens
         else:
-            # Buffer full! Push current chunk and start a new one with this paragraph
+            # Buffer full! Push current chunk and start a new one
             chunks.append("\n\n".join(current_chunk_paragraphs))
-            current_chunk_paragraphs = [p_clean]
-            current_tokens = p_tokens
+            
+            # OVERLAP: carry the last paragraph into the new chunk if it fits
+            last_paragraph = current_chunk_paragraphs[-1]
+            last_p_tokens = len(encoder.encode(last_paragraph))
+            if last_p_tokens + p_tokens <= max_chunk_size:
+                current_chunk_paragraphs = [last_paragraph, p_clean]
+                current_tokens = last_p_tokens + p_tokens
+            else:
+                current_chunk_paragraphs = [p_clean]
+                current_tokens = p_tokens
             
     # Push any leftover paragraphs at the end
     if current_chunk_paragraphs:
