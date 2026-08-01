@@ -32,3 +32,25 @@
 * **Grounding Guardrails & Zero Hallucinations:** Enforcing strict prompt rules (`temperature=0.0`, explicit instructions to admit ignorance, and chunk-level citation requirements) prevented the LLM from relying on outside pre-training knowledge.
 * **Retrieval Boundaries:** When asking specific questions (e.g., Chapter 1 themes or paper methodology), returning `top_k=3` chunks meant the model correctly refused to answer if the target content was outside those 3 chunks, proving prompt grounding works as designed.
 * **RAG vs. Fine-Tuning:** RAG remains the optimal pattern for dynamic, verifiable knowledge retrieval with explicit source attribution, whereas fine-tuning is better suited for style and format customization.
+
+## Day 5: Multi-Document RAG & The Private Knowledge Assistant
+
+### 1. Architecture & Unified Interface
+* Built a complete, interactive CLI application (`knowledge_assistant.py`) wrapping ingestion, vector retrieval, prompt grounding, and LLM generation into a single `KnowledgeAssistant` class.
+* Integrated `rich` to provide visual terminal feedback (loading spinners, error formatting) and a structured summary table showing unique source filenames, media types (PDF, TXT, MD), and total chunk counts.
+* Implemented full retrieval transparency: every answer displays the `RETRIEVED CONTEXT` block (Chunk ID, Source Filename, Page Number, Cosine Distance) before printing the LLM's response, allowing immediate verification of grounding.
+
+### 2. Global Semantic Search vs. Source Filtering
+* **Global Search (`<question>`):** Evaluated semantic similarity routing across a multi-document database (463 total chunks: 29 PDF, 433 TXT, 1 MD).
+  * *Observation:* Distinct domain vocabulary (e.g., "AI agents", "8 GPUs", "Beaufort") allows cosine similarity to naturally surface the correct document to Chunk 1 without manual intervention.
+  * *Limitation:* When the primary target document has fewer chunks than `top_k=6` (e.g., a 1-chunk markdown note), ChromaDB fills remaining slots with mathematically closest chunks from other documents. Zero-temperature grounding prompts successfully instruct the LLM to ignore this out-of-domain noise.
+* **Source Filtering (`filter <source> <question>`):** Implemented database-level pre-filtering (`where={"source": filename}`) to restrict similarity searches strictly to a single document.
+  * *Result:* Eliminates cross-contamination entirely, ensuring precision for deep technical or literary extraction.
+
+### 3. Resolving Vector Dominance via Federated Retrieval
+* **The Engineering Problem ("Needle in a Haystack"):** In broad cross-document queries (e.g., comparing attention mechanisms), large vocabulary-dense documents (the 29-chunk academic paper) crowd out smaller documents (the 1-chunk personal note) from the `top_k=6` window.
+* **The Solution:** Built a Federated/Balanced Retrieval command (`compare <src1> <src2> <question>`) that executes independent vector searches against two specified sources (`top_k=3` each) before merging the results into a balanced prompt.
+* **The Result:** Successfully eliminated source starvation. The LLM synthesized mathematical definitions from an academic arXiv PDF and conceptual definitions from personal markdown notes into a single, accurately cited comparative response.
+
+### 4. Grounding Guardrail Validation
+* Tested plausible out-of-domain traps (e.g., querying speech recognition performance on an NLP translation paper). The model consistently adhered to system prompt rules, refusing to hallucinate and stating when documents lacked sufficient information.
